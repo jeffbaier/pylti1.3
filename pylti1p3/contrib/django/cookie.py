@@ -7,6 +7,12 @@ from pylti1p3.cookie import CookieService
 if "samesite" not in Cookie.Morsel._reserved:  # type: ignore
     Cookie.Morsel._reserved.setdefault("samesite", "SameSite")  # type: ignore
 
+# Add support for the Partitioned attribute
+# pylint: disable=protected-access
+if "partitioned" not in Cookie.Morsel._reserved:  # type: ignore
+    Cookie.Morsel._reserved.setdefault("partitioned", "Partitioned")  # type: ignore
+    Cookie.Morsel._flags.add("partitioned")  # type: ignore
+
 
 class DjangoCookieService(CookieService):
     _request = None
@@ -46,11 +52,14 @@ class DjangoCookieService(CookieService):
                 )
 
                 # SameSite=None and Secure=True are required to work inside iframes
+                # Partitioned only works with Secure and SomeSite=None
                 if django_support_samesite_none:
                     kwargs["samesite"] = "None"
                     response.set_cookie(key, **kwargs)
+                    response.cookies[key]["partitioned"] = True
                 else:
                     response.set_cookie(key, **kwargs)
                     response.cookies[key]["samesite"] = "None"
+                    response.cookies[key]["partitioned"] = True
             else:
                 response.set_cookie(key, **kwargs)
